@@ -458,6 +458,24 @@ object frmMain: TfrmMain
       end
     end
   end
+  object TreePanelRight: TPanel
+    Left = 639
+    Height = 191
+    Top = 20
+    Width = 121
+    Align = alRight
+    BevelOuter = bvNone
+    TabOrder = 6
+    Visible = False
+  end
+  object TreeSplitterRight: TSplitter
+    Left = 634
+    Height = 191
+    Top = 20
+    Width = 5
+    Align = alRight
+    ResizeAnchor = akRight
+  end
   object PanelAllProgress: TPanel
     Left = 0
     Height = 0
@@ -1378,6 +1396,9 @@ object frmMain: TfrmMain
       end
       object mnuTreeView: TMenuItem
         Action = actTreeView
+      end
+      object mnuTreeViewRight: TMenuItem
+        Action = actTreeViewRight
       end
       object miLine32: TMenuItem
         Caption = '-'
@@ -2609,7 +2630,14 @@ object frmMain: TfrmMain
     object actTreeView: TAction
       Tag = 16
       Category = 'Window'
-      Caption = '&Tree View Panel'
+      Caption = '&Tree View Panel (Left)'
+      GroupIndex = 3
+      OnExecute = actExecute
+    end
+    object actTreeViewRight: TAction
+      Tag = 16
+      Category = 'Window'
+      Caption = 'Tree View Panel (&Right)'
       GroupIndex = 3
       OnExecute = actExecute
     end

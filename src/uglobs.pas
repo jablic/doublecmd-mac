@@ -309,7 +309,8 @@ var
   gShowColonAfterDrive,
   gShortFormatDriveInfo: Boolean;
   gDrivesListButtonOptions: TDrivesListButtonOptions;
-  gSeparateTree: Boolean;
+  gSeparateTreeLeft: Boolean;
+  gSeparateTreeRight: Boolean;
 
   { Toolbar }
   gMiddleToolBarFlat,
@@ -1226,6 +1227,7 @@ begin
       AddIfNotExists(['Ctrl+Shift+Tab'],[],'cm_PrevTab');
       AddIfNotExists(['Ctrl+Shift+F7'],[],'cm_AddNewSearch');
       AddIfNotExists(['Ctrl+Shift+F8'],[],'cm_TreeView');
+      AddIfNotExists(['Ctrl+Shift+F9'],[],'cm_TreeViewRight');
       AddIfNotExists(['Ctrl+Tab'],[],'cm_NextTab');
       AddIfNotExists(['Ctrl+Up'],[],'cm_OpenDirInNewTab');
       AddIfNotExists(['Ctrl+\'],[],'cm_ChangeDirToRoot');
@@ -2035,7 +2037,8 @@ begin
   gUpperCaseDriveLetter := False;
   gShowColonAfterDrive := False;
   gDrivesListButtonOptions := [dlbShowLabel, dlbShowFileSystem, dlbShowFreeSpace];
-  gSeparateTree := False;
+  gSeparateTreeLeft := False;
+  gSeparateTreeRight := False;
 
   { Keys page }
   gKeyTyping[ktmNone]    := ktaQuickSearch;
@@ -2952,7 +2955,8 @@ begin
           LoadOption(SubNode, gDrivesListButtonOptions, dlbShowFreeSpace, 'ShowFreeSpace');
         end;
       end;
-      gSeparateTree := GetValue(Node, 'SeparateTree', gSeparateTree);
+      gSeparateTreeLeft := GetValue(Node, 'SeparateTree', gSeparateTreeLeft);
+      gSeparateTreeRight := GetValue(Node, 'SeparateTreeRight', gSeparateTreeRight);
       gDirectoryTabs := GetValue(Node, 'DirectoryTabs', gDirectoryTabs);
       gCurDir := GetValue(Node, 'CurrentDirectory', gCurDir);
       gTabHeader := GetValue(Node, 'TabHeader', gTabHeader);
@@ -3670,7 +3674,8 @@ begin
     SetValue(SubNode, 'ShowLabel', dlbShowLabel in gDrivesListButtonOptions);
     SetValue(SubNode, 'ShowFileSystem', dlbShowFileSystem in gDrivesListButtonOptions);
     SetValue(SubNode, 'ShowFreeSpace', dlbShowFreeSpace in gDrivesListButtonOptions);
-    SetValue(Node, 'SeparateTree', gSeparateTree);
+    SetValue(Node, 'SeparateTree', gSeparateTreeLeft);
+    SetValue(Node, 'SeparateTreeRight', gSeparateTreeRight);
     SetValue(Node, 'DirectoryTabs', gDirectoryTabs);
     SetValue(Node, 'CurrentDirectory', gCurDir);
     SetValue(Node, 'TabHeader', gTabHeader);

@@ -250,6 +250,7 @@ type
    procedure cm_LeftThumbView(const Params: array of string);
    procedure cm_RightThumbView(const Params: array of string);
    procedure cm_TreeView(const Params: array of string);
+   procedure cm_TreeViewRight(const Params: array of string);
    procedure cm_CopyNamesToClip(const {%H-}Params: array of string);
    procedure cm_FocusTreeView(const {%H-}Params: array of string);
    procedure cm_FocusCmdLine(const {%H-}Params: array of string);
@@ -1127,10 +1128,17 @@ procedure TMainCommands.cm_FocusTreeView(const Params: array of string);
 begin
   with frmMain do
   begin
-    if gSeparateTree then
+    if (ActiveFrame = FrameLeft) and gSeparateTreeLeft then
     begin
       if ActiveFrame.Focused then
-        ShellTreeView.SetFocus
+        ShellTreeViewLeft.SetFocus
+      else
+        ActiveFrame.SetFocus;
+    end
+    else if (ActiveFrame = FrameRight) and gSeparateTreeRight then
+    begin
+      if ActiveFrame.Focused then
+        ShellTreeViewRight.SetFocus
       else
         ActiveFrame.SetFocus;
     end;
@@ -2402,7 +2410,23 @@ end;
 
 procedure TMainCommands.cm_TreeView(const Params: array of string);
 begin
-  gSeparateTree := not gSeparateTree;
+  gSeparateTreeLeft := not gSeparateTreeLeft;
+  with frmMain do
+  begin
+    DisableAutoSizing;
+    try
+      UpdateShellTreeView;
+      UpdateTreeViewPath;
+      MainSplitterPos:= MainSplitterPos;
+    finally
+      EnableAutoSizing;
+    end;
+  end;
+end;
+
+procedure TMainCommands.cm_TreeViewRight(const Params: array of string);
+begin
+  gSeparateTreeRight := not gSeparateTreeRight;
   with frmMain do
   begin
     DisableAutoSizing;

@@ -148,6 +148,7 @@ type
     actUnmarkCurrentPath: TAction;
     actMarkCurrentPath: TAction;
     actTreeView: TAction;
+    actTreeViewRight: TAction;
     actFocusTreeView: TAction;
     actToggleFullscreenConsole: TAction;
     actSrcOpenDrives: TAction;
@@ -535,7 +536,10 @@ type
     MainTrayIcon: TTrayIcon;
     TreePanel: TPanel;
     TreeSplitter: TSplitter;
-    ShellTreeView: TCustomTreeView;
+    TreePanelRight: TPanel;
+    TreeSplitterRight: TSplitter;
+    ShellTreeViewLeft: TCustomTreeView;
+    ShellTreeViewRight: TCustomTreeView;
     miLine10: TMenuItem;
     miLine11: TMenuItem;
     miLine21: TMenuItem;
@@ -622,7 +626,8 @@ type
     procedure miTrayIconRestoreClick(Sender: TObject);
     procedure PanelButtonClick(Button: TSpeedButton; FileView: TFileView);
     procedure pnlDiskResize(Sender: TObject);
-    procedure ShellTreeViewSelect;
+    function TreeViewFrame(ATree: TCustomTreeView): TFileView;
+    procedure ShellTreeViewSelect(ATree: TCustomTreeView);
     procedure ShellTreeViewKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
     procedure ShellTreeViewMouseUp(Sender: TObject; Button: TMouseButton;
@@ -1781,40 +1786,50 @@ begin
   end;
 end;
 
-procedure TfrmMain.ShellTreeViewSelect;
+function TfrmMain.TreeViewFrame(ATree: TCustomTreeView): TFileView;
 begin
-  ShellTreeView.Tag := 1;
+  if ATree = ShellTreeViewRight then
+    Result := FrameRight
+  else
+    Result := FrameLeft;
+end;
+
+procedure TfrmMain.ShellTreeViewSelect(ATree: TCustomTreeView);
+begin
+  ATree.Tag := 1;
   try
-    SetFileSystemPath(ActiveFrame, (ShellTreeView as TShellTreeView).Path);
+    SetFileSystemPath(TreeViewFrame(ATree), (ATree as TShellTreeView).Path);
   finally
-    ShellTreeView.Tag := 0;
+    ATree.Tag := 0;
   end;
 end;
 
 procedure TfrmMain.ShellTreeViewKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
-  if Key = VK_RETURN then ShellTreeViewSelect;
+  if Key = VK_RETURN then ShellTreeViewSelect(Sender as TCustomTreeView);
 end;
 
 procedure TfrmMain.ShellTreeViewMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
+  ATree: TCustomTreeView;
   AFile: TFile;
   AFiles: TFiles;
   APoint: TPoint;
   AFileName: String;
 begin
+  ATree := Sender as TCustomTreeView;
 {$IF DEFINED(MSWINDOWS)}
   if Button = mbRight then
   try
-    AFileName:= ExcludeTrailingBackslash((ShellTreeView as TShellTreeView).Path);
+    AFileName:= ExcludeTrailingBackslash((ATree as TShellTreeView).Path);
     AFile:= TFileSystemFileSource.CreateFileFromFile(AFileName);
     try
       AFiles:= TFiles.Create(AFile.Path);
       AFiles.Add(AFile);
-      APoint := ShellTreeView.ClientToScreen(Classes.Point(X, Y));
-      ShowContextMenu(ShellTreeView, AFiles, APoint.X, APoint.Y, False, nil);
+      APoint := ATree.ClientToScreen(Classes.Point(X, Y));
+      ShowContextMenu(ATree, AFiles, APoint.X, APoint.Y, False, nil);
     finally
       FreeAndNil(AFiles);
     end;
@@ -1825,7 +1840,7 @@ begin
   end;
 {$ENDIF}
   if Button = mbLeft then
-    ShellTreeViewSelect;
+    ShellTreeViewSelect(ATree);
 end;
 
 procedure TfrmMain.FormDestroy(Sender: TObject);
@@ -4954,77 +4969,99 @@ begin
 end;
 
 procedure TfrmMain.UpdateShellTreeView;
+
+  procedure DoUpdate(ATreePanel: TPanel; ATreeSplitter: TSplitter;
+    var ATree: TCustomTreeView; ASeparate: Boolean; AAction: TAction);
+  begin
+    AAction.Checked := ASeparate;
+    ATreeSplitter.Visible := ASeparate;
+    ATreePanel.Visible := ASeparate;
+
+    if ASeparate and (ATree = nil) then
+    begin
+      ATree := TShellTreeView.Create(ATreePanel);
+      ATree.Parent := ATreePanel;
+      ATree.Align := alClient;
+      ATree.ScrollBars := ssAutoBoth;
+
+      with ATree as TShellTreeView do
+      begin
+        Self.UpdateTreeView;
+        ReadOnly := True;
+        RightClickSelect := True;
+        FileSortType := fstNone;
+        PopulateWithBaseFiles;
+        CustomSort(@ShellTreeViewSort);
+
+        Images := TImageList.Create(Self);
+        Images.Width := gIconsSize;
+        Images.Height := gIconsSize;
+        Images.Add(PixMapManager.GetFolderIcon(gIconsSize, ATree.Color), nil);
+
+        OnKeyDown := @ShellTreeViewKeyDown;
+        OnMouseUp := @ShellTreeViewMouseUp;
+        OnAdvancedCustomDrawItem := @ShellTreeViewAdvancedCustomDrawItem;
+
+        ExpandSignType := tvestPlusMinus;
+        Options := Options - [tvoThemedDraw];
+        Options := Options + [tvoReadOnly, tvoRightClickSelect];
+      end;
+    end;
+
+    if ASeparate then
+    begin
+      with gColors.FilePanel^ do
+      begin
+        ATree.Font.Color := ForeColor;
+        ATree.BackgroundColor := BackColor;
+        ATree.SelectionColor := CursorColor;
+      end;
+      FontOptionsToFont(gFonts[dcfMain], ATree.Font);
+    end;
+  end;
+
 begin
-  actTreeView.Checked := gSeparateTree;
-  TreeSplitter.Visible := gSeparateTree;
-  TreePanel.Visible := gSeparateTree;
-
-  if gSeparateTree and (ShellTreeView = nil) then
-  begin
-    ShellTreeView := TShellTreeView.Create(TreePanel);
-    ShellTreeView.Parent := TreePanel;
-    ShellTreeView.Align := alClient;
-    ShellTreeView.ScrollBars := ssAutoBoth;
-
-    with ShellTreeView as TShellTreeView do
-    begin
-      UpdateTreeView;
-      ReadOnly := True;
-      RightClickSelect := True;
-      FileSortType := fstNone;
-      PopulateWithBaseFiles;
-      CustomSort(@ShellTreeViewSort);
-
-      Images := TImageList.Create(Self);
-      Images.Width := gIconsSize;
-      Images.Height := gIconsSize;
-      Images.Add(PixMapManager.GetFolderIcon(gIconsSize, ShellTreeView.Color), nil);
-
-      OnKeyDown := @ShellTreeViewKeyDown;
-      OnMouseUp := @ShellTreeViewMouseUp;
-      OnAdvancedCustomDrawItem := @ShellTreeViewAdvancedCustomDrawItem;
-
-      ExpandSignType := tvestPlusMinus;
-      Options := Options - [tvoThemedDraw];
-      Options := Options + [tvoReadOnly, tvoRightClickSelect];
-    end;
-  end;
-
-  if gSeparateTree then
-  begin
-    with gColors.FilePanel^ do
-    begin
-      ShellTreeView.Font.Color := ForeColor;
-      ShellTreeView.BackgroundColor := BackColor;
-      ShellTreeView.SelectionColor := CursorColor;
-    end;
-    FontOptionsToFont(gFonts[dcfMain], ShellTreeView.Font);
-  end;
+  DoUpdate(TreePanel, TreeSplitter, ShellTreeViewLeft, gSeparateTreeLeft, actTreeView);
+  DoUpdate(TreePanelRight, TreeSplitterRight, ShellTreeViewRight, gSeparateTreeRight, actTreeViewRight);
 end;
 
 procedure TfrmMain.UpdateTreeViewPath;
-begin
-  if (ShellTreeView = nil) then Exit;
-  if (ShellTreeView.Tag <> 0) then Exit;
-  if (fspDirectAccess in ActiveFrame.FileSource.Properties) then
-  try
-    (ShellTreeView as TShellTreeView).Path := ActiveFrame.CurrentPath;
-  except
-    // Skip
+
+  procedure DoUpdate(AFrame: TFileView; ATree: TCustomTreeView);
+  begin
+    if (ATree = nil) then Exit;
+    if (ATree.Tag <> 0) then Exit;
+    if (fspDirectAccess in AFrame.FileSource.Properties) then
+    try
+      (ATree as TShellTreeView).Path := AFrame.CurrentPath;
+    except
+      // Skip
+    end;
   end;
+
+begin
+  DoUpdate(FrameLeft, ShellTreeViewLeft);
+  DoUpdate(FrameRight, ShellTreeViewRight);
 end;
 
 procedure TfrmMain.UpdateTreeView;
-begin
-  if (ShellTreeView = nil) then Exit;
-  with (ShellTreeView as TShellTreeView) do
+
+  procedure DoUpdate(ATree: TCustomTreeView);
   begin
-    if gShowSystemFiles then
-      ObjectTypes:= ObjectTypes + [otHidden]
-    else begin
-      ObjectTypes:= ObjectTypes - [otHidden];
+    if (ATree = nil) then Exit;
+    with (ATree as TShellTreeView) do
+    begin
+      if gShowSystemFiles then
+        ObjectTypes:= ObjectTypes + [otHidden]
+      else begin
+        ObjectTypes:= ObjectTypes - [otHidden];
+      end;
     end;
   end;
+
+begin
+  DoUpdate(ShellTreeViewLeft);
+  DoUpdate(ShellTreeViewRight);
 end;
 
 function CompareDrives(Item1, Item2: Pointer): Integer;
@@ -5105,11 +5142,12 @@ begin
   dskLeft.AddToolItemExecutor(TKASDriveItem, @LeftDriveBarExecuteDrive);
   dskRight.AddToolItemExecutor(TKASDriveItem, @RightDriveBarExecuteDrive);
 
-  if gSeparateTree and Assigned(ShellTreeView) then
-  begin
-    TShellTreeView(ShellTreeView).PopulateWithBaseFiles;
+  if gSeparateTreeLeft and Assigned(ShellTreeViewLeft) then
+    TShellTreeView(ShellTreeViewLeft).PopulateWithBaseFiles;
+  if gSeparateTreeRight and Assigned(ShellTreeViewRight) then
+    TShellTreeView(ShellTreeViewRight).PopulateWithBaseFiles;
+  if gSeparateTreeLeft or gSeparateTreeRight then
     UpdateTreeViewPath;
-  end;
 end;
 
 procedure TfrmMain.AddSpecialButtons(dskPanel: TKASToolBar);
