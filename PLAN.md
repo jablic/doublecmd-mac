@@ -90,21 +90,29 @@ Carbon — Carbon давно выпилен. Значит нативные `NSVi
    `NSToolbar` нативно (красивее, но платформо-специфично и рвёт общий UI-код
    с Windows/Linux сборками — решить, форкаем ли мы кроссплатформенность
    вообще, раз цель — только macOS).
-5. **Шрифты/метрики** — заменить `gFonts[dcfMain]` дефолт на SF Pro
-   (`.AppleSystemUIFont`), поднять `gIconsSize`/`RowHeight` под привычные
-   ForkLift-пропорции (совпадает с `FontOptionsToFont` вызовами, уже видел в
-   `UpdateShellTreeView`).
-6. **Цветовая схема** — `gColors.FilePanel` (тот же record, что уже красит
-   дерево в Фазе 1) свести к системным `NSColor.controlBackgroundColor` /
-   `selectedContentBackgroundColor` через Cocoa-биндинг, чтобы тема сама
-   переключалась light/dark вместе с macOS.
+5. ~~**Шрифты/метрики**~~ — **готово**. `gFonts[dcfMain].Name` уже был
+   `'default'` (LCL резолвит это в `.AppleSystemUIFont` на Cocoa) — трогать
+   не пришлось. Убрал только `fsBold` из дефолтного стиля (legacy
+   Total-Commander-конвенция, слишком жирно рядом с нативными macOS-приложениями)
+   — `src/uglobs.pas:1910`.
+6. ~~**Цветовая схема**~~ — **готово, без правок**. `gColors.FilePanel`
+   дефолты уже используют семантические LCL-цвета (`clWindow`,
+   `clWindowText`, `clHighlight`, `clHighlightText`, `clInactiveCaption` —
+   `src/ucolors.pas:265-273`), которые Cocoa widgetset маппит на реальные
+   `NSColor` нативно — light/dark mode уже работает без единой строчки кода.
+   Тулбары (`gToolBarFlat`, `gMiddleToolBarFlat`, `gDriveBarFlat`,
+   `gInterfaceFlat`) тоже уже `True` по умолчанию.
 
-Это отдельный, открытый по объёму трек (недели, не дни) — требует Objective-C
-bridging поверх LCL, которого сейчас в кодовой базе нет. Рекомендация: начать
-с owner-draw полировки (пункт 1, дёшево и уже поддерживается крючками
-`OnAdvancedCustomDraw*`), и только потом решать, стоит ли лезть в
-`NSVisualEffectView`/`NSToolbar` — там риск сломать кроссплатформенность и
-привязать форк намертво к Cocoa-интерфейсу LCL.
+Пункты 1/5/6 не требуют Objective-C — сделаны или тривиальны. Пункты 2-4
+(vibrancy/blur, `CALayer` тени, `NSToolbar`/сегментированный переключатель)
+— всё ещё отдельный, открытый по объёму трек (недели, не дни), требует
+Objective-C bridging поверх LCL, которого в кодовой базе пока нет. Следующий
+шаг с наибольшей отдачей за минимальные усилия — owner-draw полировка
+`ShellTreeViewAdvancedCustomDrawItem`/`uColumnsView` (закруглённые
+plus/minus, приглушённые цвета выделения) — уже есть крючки
+`OnAdvancedCustomDraw*`, не требует ObjC. `NSVisualEffectView`/`NSToolbar` —
+после этого, и только если решили форкать кроссплатформенность (эти API
+платформо-специфичны, рвут общий UI-код с Windows/Linux сборками).
 
 ## Фаза 3 — сборка и релиз
 
