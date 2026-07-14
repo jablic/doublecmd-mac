@@ -1907,7 +1907,7 @@ begin
   { Fonts page }
   gFonts[dcfMain].Name := 'default';
   gFonts[dcfMain].Size := 10;
-  gFonts[dcfMain].Style := [fsBold];
+  gFonts[dcfMain].Style := [];
   gFonts[dcfMain].Quality := fqDefault;
   gFonts[dcfMain].MinValue := 6;
   gFonts[dcfMain].MaxValue := 200;
