@@ -3205,6 +3205,9 @@ begin
       AddCommand('cm_ColumnsView');
       AddCommand('cm_ThumbnailsView');
       AddSeparator;
+      AddCommand('cm_TreeView');
+      AddCommand('cm_TreeViewRight');
+      AddSeparator;
       AddCommand('cm_FlatView');
       AddSeparator;
       AddCommand('cm_ViewHistoryPrev');
